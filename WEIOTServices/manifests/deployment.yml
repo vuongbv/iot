@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: iotservices 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iotservices
+  template:
+    metadata:
+      labels:
+        app: iotservices 
+    spec:
+      containers:
+        - name: iotservices 
+          image: acrgtechdev.azurecr.io/iotservices
+          ports:
+          - containerPort: 80

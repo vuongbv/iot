@@ -1,0 +1,89 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weiotservices
+  namespace: weiotservices
+  labels:
+    app: weiotservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weiotservices
+  template:
+    metadata:
+      labels:
+        app: weiotservices
+    spec:     
+      containers:
+        - name: weiotservices
+          image: acrwedev111.azurecr.io/weiotservices:latest
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: weiotservices-config
+          args:
+            - /server
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: weiotservices
+    namespace: weiotservices
+spec:
+    type: ClusterIP
+    ports:
+    - port: 80 
+      protocol: TCP
+      targetPort: 80
+    selector:
+        app: weiotservices
+#kind: Service
+#apiVersion: v1
+#metadata:
+#  name: sharedservices
+#  namespace: sharedservices
+#spec:
+#  selector:
+#    app: sharedservices
+#  type: ClusterIP
+#  ports:
+#    - protocol: TCP
+#      port: 80
+#      targetPort: 80
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+    name: weiotservices-ingress
+    namespace: weiotservices
+    annotations:
+       nginx.ingress.kubernetes.io/rewrite-target: /$1
+       nginx.ingress.kubernetes.io/use-regex: "true"
+       kubernetes.io/ingress.class: "nginx"
+spec:
+    rules:
+      - host:
+        http:
+         paths:
+           - path: /api/(.*)
+             pathType: Prefix
+             backend:
+               service:
+                 name: weiotservices    
+                 port:
+                   number: 80
+status:
+    loadBalancer:
+       ingress:
+         - ip: 20.205.254.51
